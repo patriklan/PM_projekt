@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<style>
+    .matrix-container { display: flex; gap: 20px; }
+    .matrix { text-align: center; }
+    table { margin-bottom: 10px; }
+</style>
+{% endblock %}
+
+{% block body %}
+<h1>Eon je gej</h1>
+
+<div class="matrix-container">
+    <div class="matrix">
+        <h2>Matrica A</h2>
+        <form action="/" method="POST">
+            <table border="1">
+                {% for row in range(rowa) %}
+                    <tr>
+                        {% for col in range(cola) %}
+                            <td><input size="3" type="number" name="a_{{ row }}_{{ col }}" value="{{ matrix_a[row][col] }}" /></td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </table>
+            <button type="submit" name="action" value="add_row_a">Dodaj red</button>
+            <button type="submit" name="action" value="remove_row_a">Makni red</button>
+            <button type="submit" name="action" value="add_column_a">Dodaj stupac</button>
+            <button type="submit" name="action" value="remove_column_a">Makni stupac</button>
+        </form>
+    </div>
+
+    <div class="matrix">
+        <h2>Matrica B</h2>
+        <form action="/" method="POST">
+            <table border="1">
+                {% for row in range(rowb) %}
+                    <tr>
+                        {% for col in range(colb) %}
+                            <td><input size="3" type="number" name="b_{{ row }}_{{ col }}" value="{{ matrix_b[row][col] }}" /></td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </table>
+            <button type="submit" name="action" value="add_row_b">Dodaj red</button>
+            <button type="submit" name="action" value="remove_row_b">Makni red</button>
+            <button type="submit" name="action" value="add_column_b">Dodaj stupac</button>
+            <button type="submit" name="action" value="remove_column_b">Makni stupac</button>
+        </form>
+    </div>
+
+    <div class="matrix">
+        <h2>Rezultat</h2>
+        <table border="1">
+            {% for row in result_matrix %}
+                <tr>
+                    {% for col in row %}
+                        <td>{{ col }}</td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+{% endblock %}
