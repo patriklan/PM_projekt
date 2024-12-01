@@ -2,19 +2,89 @@
 
 {% block head %}
 <style>
-    .matrix-container { display: flex; gap: 20px; }
+    .matrix-container { display: flex; gap: 20px; flex-wrap: wrap; }
     .matrix { text-align: center; }
     table { margin-bottom: 10px; }
 </style>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const updateMatrix = (matrixName) => {
+            const rows = document.querySelectorAll(`.matrix[data-name="${matrixName}"] table tr`);
+            const matrix = Array.from(rows).map(row => 
+                Array.from(row.querySelectorAll('input')).map(input => parseFloat(input.value) || 0)
+            );
+
+            fetch('/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: `update_${matrixName}`, matrix })
+            }).then(response => response.json()).then(data => {
+                if (matrixName === 'a') {
+                    renderTransposedMatrix('ta', data.matrix_ta, data.cola, data.rowa);
+                } else if (matrixName === 'b') {
+                    renderTransposedMatrix('tb', data.matrix_tb, data.colb, data.rowb);
+                }
+            });
+        };
+
+        const renderTransposedMatrix = (matrixName, matrix, rows, cols) => {
+            const container = document.querySelector(`.matrix.transposed[data-name="${matrixName}"] table`);
+            container.innerHTML = '';
+            for (let i = 0; i < rows; i++) {
+                const row = document.createElement('tr');
+                for (let j = 0; j < cols; j++) {
+                    const cell = document.createElement('td');
+                    cell.textContent = matrix[i][j];
+                    row.appendChild(cell);
+                }
+                container.appendChild(row);
+            }
+        };
+
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('change', e => {
+                const matrixName = e.target.closest('.matrix').dataset.name;
+                updateMatrix(matrixName);
+            });
+        });
+
+        document.querySelectorAll('button[data-action]').forEach(button => {
+            button.addEventListener('click', e => {
+                e.preventDefault();
+                const action = button.dataset.action;
+
+                fetch('/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action })
+                }).then(response => response.json()).then(data => {
+                    if (action === 'TrA') {
+                        renderTransposedMatrix('ta', data.matrix_ta, data.cola, data.rowa);
+                    } else if (action === 'TrB') {
+                        renderTransposedMatrix('tb', data.matrix_tb, data.colb, data.rowb);
+                    } else {
+                        location.reload();
+                    }
+                });
+            });
+        });
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+            }
+        });
+    });
+</script>
 {% endblock %}
 
 {% block body %}
-<h1>Eon je gej</h1>
+<h1>Matrix Operations</h1>
 
 <div class="matrix-container">
-    <div class="matrix">
-        <h2>Matrica A</h2>
-        <form action="/" method="POST">
+    <div class="matrix" data-name="a">
+        <h2>Matrix A</h2>
+        <form>
             <table border="1">
                 {% for row in range(rowa) %}
                     <tr>
@@ -24,16 +94,16 @@
                     </tr>
                 {% endfor %}
             </table>
-            <button type="submit" name="action" value="add_row_a">Dodaj red</button>
-            <button type="submit" name="action" value="remove_row_a">Makni red</button>
-            <button type="submit" name="action" value="add_column_a">Dodaj stupac</button>
-            <button type="submit" name="action" value="remove_column_a">Makni stupac</button>
+            <button type="button" data-action="add_row_a">Add Row</button>
+            <button type="button" data-action="remove_row_a">Remove Row</button>
+            <button type="button" data-action="add_column_a">Add Column</button>
+            <button type="button" data-action="remove_column_a">Remove Column</button>
         </form>
     </div>
 
-    <div class="matrix">
-        <h2>Matrica B</h2>
-        <form action="/" method="POST">
+    <div class="matrix" data-name="b">
+        <h2>Matrix B</h2>
+        <form>
             <table border="1">
                 {% for row in range(rowb) %}
                     <tr>
@@ -43,24 +113,26 @@
                     </tr>
                 {% endfor %}
             </table>
-            <button type="submit" name="action" value="add_row_b">Dodaj red</button>
-            <button type="submit" name="action" value="remove_row_b">Makni red</button>
-            <button type="submit" name="action" value="add_column_b">Dodaj stupac</button>
-            <button type="submit" name="action" value="remove_column_b">Makni stupac</button>
+            <button type="button" data-action="add_row_b">Add Row</button>
+            <button type="button" data-action="remove_row_b">Remove Row</button>
+            <button type="button" data-action="add_column_b">Add Column</button>
+            <button type="button" data-action="remove_column_b">Remove Column</button>
         </form>
     </div>
 
-    <div class="matrix">
-        <h2>Rezultat</h2>
-        <table border="1">
-            {% for row in result_matrix %}
-                <tr>
-                    {% for col in row %}
-                        <td>{{ col }}</td>
-                    {% endfor %}
-                </tr>
-            {% endfor %}
-        </table>
+    <div class="matrix transposed" data-name="ta">
+        <h2>Transposed A</h2>
+        <table border="1"></table>
+    </div>
+
+    <div class="matrix transposed" data-name="tb">
+        <h2>Transposed B</h2>
+        <table border="1"></table>
     </div>
 </div>
+
+<form>
+    <button type="button" data-action="TrA">Transpose Matrix A</button>
+    <button type="button" data-action="TrB">Transpose Matrix B</button>
+</form>
 {% endblock %}
