@@ -40,13 +40,13 @@ def update():
     if action in ['update_a', 'update_b']:
         matrix_name = 'matrix_a' if action == 'update_a' else 'matrix_b'
         session[matrix_name] = data['matrix']
-    elif action == 'add_row_a':
+    elif action == 'add_row_a' and session['rowa'] < 10:
         session['rowa'] += 1
         session['matrix_a'].append([0] * session['cola'])
     elif action == 'remove_row_a' and session['rowa'] > 1:
         session['rowa'] -= 1
         session['matrix_a'].pop()
-    elif action == 'add_column_a':
+    elif action == 'add_column_a' and session['cola'] < 10:
         session['cola'] += 1
         for row in session['matrix_a']:
             row.append(0)
@@ -54,13 +54,13 @@ def update():
         session['cola'] -= 1
         for row in session['matrix_a']:
             row.pop()
-    elif action == 'add_row_b':
+    elif action == 'add_row_b' and session['rowb'] < 10:
         session['rowb'] += 1
         session['matrix_b'].append([0] * session['colb'])
     elif action == 'remove_row_b' and session['rowb'] > 1:
         session['rowb'] -= 1
         session['matrix_b'].pop()
-    elif action == 'add_column_b':
+    elif action == 'add_column_b' and session['colb'] < 10:
         session['colb'] += 1
         for row in session['matrix_b']:
             row.append(0)
@@ -73,6 +73,7 @@ def update():
             [session['matrix_a'][row][col] for row in range(session['rowa'])]
             for col in range(session['cola'])
         ]
+        session['matrix_a'] = session['matrix_ta']
     elif action == 'TrB':
         session['matrix_tb'] = [
             [session['matrix_b'][row][col] for row in range(session['rowb'])]
