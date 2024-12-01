@@ -73,18 +73,28 @@ def update():
             [session['matrix_a'][row][col] for row in range(session['rowa'])]
             for col in range(session['cola'])
         ]
-        session['matrix_a'] = session['matrix_ta']
     elif action == 'TrB':
         session['matrix_tb'] = [
             [session['matrix_b'][row][col] for row in range(session['rowb'])]
             for col in range(session['colb'])
         ]
+    elif action == 'GenerateZ':
+        # Ensure dimensions match for addition
+        if session['rowa'] == session['rowb'] and session['cola'] == session['colb']:
+            session['matrix_z'] = [
+                [session['matrix_a'][i][j] + session['matrix_b'][i][j]
+                 for j in range(session['cola'])]
+                for i in range(session['rowa'])
+            ]
+        else:
+            session['matrix_z'] = None  # Indicate an error
 
     session.modified = True
 
     return jsonify({
         'matrix_a': session['matrix_a'],
         'matrix_b': session['matrix_b'],
+        'matrix_z': session.get('matrix_z', []),
         'matrix_ta': session['matrix_ta'],
         'matrix_tb': session['matrix_tb'],
         'rowa': session['rowa'],
