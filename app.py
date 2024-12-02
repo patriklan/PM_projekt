@@ -1,11 +1,27 @@
-from flask import Flask, render_template, request, session, redirect, url_for
+from flask import Flask, render_template, request, session, jsonify
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
+# Matrix operations
+def add_matrices(a, b):
+    return [[a[i][j] + b[i][j] for j in range(len(a[0]))] for i in range(len(a))]
+
+def subtract_matrices(a, b):
+    return [[a[i][j] - b[i][j] for j in range(len(a[0]))] for i in range(len(a))]
+
+def multiply_matrices(a, b):
+    result = [[0] * len(b[0]) for _ in range(len(a))]
+    for i in range(len(a)):
+        for j in range(len(b[0])):
+            result[i][j] = sum(a[i][k] * b[k][j] for k in range(len(b)))
+    return result
+
+def transpose_matrix(a):
+    return [[a[j][i] for j in range(len(a))] for i in range(len(a[0]))]
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
-
     if 'rowa' not in session:
         session['rowa'] = 2
     if 'cola' not in session:
@@ -23,7 +39,7 @@ def index():
 
     if request.method == 'POST':
         action = request.form.get('action')
-        
+
         matrix_a = []
         for row in range(session['rowa']):
             row_data = []
@@ -43,8 +59,9 @@ def index():
         session['matrix_b'] = matrix_b
 
         if action == 'add_row_a':
-            session['rowa'] += 1
-            session['matrix_a'].append([0] * session['cola'])
+            if session['rowa'] < 5:
+                session['rowa'] += 1
+                session['matrix_a'].append([0] * session['cola'])
         elif action == 'remove_row_a' and session['rowa'] > 1:
             session['rowa'] -= 1
             session['matrix_a'].pop()
@@ -56,10 +73,11 @@ def index():
             session['cola'] -= 1
             for row in session['matrix_a']:
                 row.pop()
-        
+
         elif action == 'add_row_b':
-            session['rowb'] += 1
-            session['matrix_b'].append([0] * session['colb'])
+            if session['rowb'] < 5:
+                session['rowb'] += 1
+                session['matrix_b'].append([0] * session['colb'])
         elif action == 'remove_row_b' and session['rowb'] > 1:
             session['rowb'] -= 1
             session['matrix_b'].pop()
@@ -83,6 +101,31 @@ def index():
         matrix_b=session['matrix_b'],
         result_matrix=session['result_matrix']
     )
+
+# AJAX route for matrix operations
+@app.route('/operation', methods=['POST'])
+def matrix_operation():
+    operation = request.json.get('operation')
+    matrix_a = session['matrix_a']
+    matrix_b = session['matrix_b']
+
+    if operation == 'add':
+        result = add_matrices(matrix_a, matrix_b)
+    elif operation == 'subtract':
+        result = subtract_matrices(matrix_a, matrix_b)
+    elif operation == 'multiply':
+        if len(matrix_a[0]) == len(matrix_b):
+            result = multiply_matrices(matrix_a, matrix_b)
+        else:
+            return jsonify({'error': 'Matrix dimensions must match for multiplication.'})
+    elif operation == 'transpose_a':
+        result = transpose_matrix(matrix_a)
+    elif operation == 'transpose_b':
+        result = transpose_matrix(matrix_b)
+    else:
+        return jsonify({'error': 'Invalid operation.'})
+
+    return jsonify({'result_matrix': result})
 
 if __name__ == "__main__":
     app.run(debug=True)
