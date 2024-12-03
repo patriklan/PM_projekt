@@ -21,6 +21,7 @@
         <button id="transposeA">Transponiraj A</button>
     </div>
     <p id="symmetryA">Simetrija: </p>
+    <p id="determinantA">Determinanta A: </p>
 
     <h2>Matrica B</h2>
     <div id="matrixBContainer"></div>
@@ -28,6 +29,7 @@
         <button id="transposeB">Transponiraj B</button>
     </div>
     <p id="symmetryB">Simetrija: </p>
+    <p id="determinantB">Determinanta B: </p>
 
     <h2>Rezultat</h2>
     <div id="resultContainer"></div>
@@ -74,14 +76,35 @@
 
     function updateMatrixInfo(containerId) {
         const matrix = getMatrixData(containerId);
+        const determinantId = containerId === 'matrixAContainer' ? '#determinantA' : '#determinantB';
+        const symmetryId = containerId === 'matrixAContainer' ? '#symmetryA' : '#symmetryB';
+
+        // Fetch symmetry information
         $.ajax({
             url: '/matrix_info',
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({ matrix }),
             success: function (data) {
-                const symmetryId = containerId === 'matrixAContainer' ? '#symmetryA' : '#symmetryB';
                 $(symmetryId).text('Simetrija: ' + data.symmetry);
+            }
+        });
+
+        // Fetch determinant
+        $.ajax({
+            url: '/determinant',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ matrix }),
+            success: function (data) {
+                if (data.determinant !== undefined) {
+                    $(determinantId).text('Determinanta: ' + data.determinant);
+                } else {
+                    $(determinantId).text('Determinanta: Nije moguće izračunati');
+                }
+            },
+            error: function () {
+                $(determinantId).text('Determinanta: Nije moguće izračunati');
             }
         });
     }

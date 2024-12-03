@@ -1,10 +1,21 @@
 from flask import Flask, render_template, request, jsonify
+import numpy as np
 
 app = Flask(__name__)
 
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/determinant', methods=['POST'])
+def determinant():
+    try:
+        matrix = np.array(request.json['matrix'])
+        det = round(np.linalg.det(matrix), 2)
+        return jsonify({'determinant': det})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
 
 @app.route('/update_matrix', methods=['POST'])
 def update_matrix():
