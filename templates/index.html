@@ -1,12 +1,13 @@
 {% extends 'base.html' %}
 {% block body %}
 <div>
-    <h1>Matrice</h1>
+    <h1>Matrice <button id="darkModeToggle" class="dark-mode-btn">🌙</button></h1> <!-- Dark Mode Button inside H1 -->
     <form id="matrix-settings">
         <label for="rowsA">Redovi A:</label>
         <input type="number" id="rowsA" name="rowsA" min="1" max="10" value="2">
         <label for="colsA">Stupci A:</label>
         <input type="number" id="colsA" name="colsA" min="1" max="10" value="2">
+        <br><br>
         <label for="rowsB">Redovi B:</label>
         <input type="number" id="rowsB" name="rowsB" min="1" max="10" value="2">
         <label for="colsB">Stupci B:</label>
@@ -16,21 +17,25 @@
 
     <h2>Matrica A</h2>
     <div id="matrixAContainer"></div>
-    <button id="transposeA">Transponiraj A</button>
+    <div class="button-container">
+        <button id="transposeA">Transponiraj A</button>
+    </div>
     <p id="symmetryA">Simetrija: </p>
 
     <h2>Matrica B</h2>
     <div id="matrixBContainer"></div>
-    <button id="transposeB">Transponiraj B</button>
+    <div class="button-container">
+        <button id="transposeB">Transponiraj B</button>
+    </div>
     <p id="symmetryB">Simetrija: </p>
 
     <h2>Rezultat</h2>
     <div id="resultContainer"></div>
 
-    <div>
+    <div class="bottom-buttons">
         <button id="add">Zbroji</button>
         <button id="subtract">Oduzmi</button>
-        <button id="multiply">Pomnožsi</button>
+        <button id="multiply">Pomnoži</button>
     </div>
 </div>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -140,6 +145,16 @@
         $('#matrixAContainer, #matrixBContainer').on('change', '.matrix-input', function () {
             const containerId = $(this).closest('div').attr('id');
             updateMatrixInfo(containerId);
+        });
+
+        // Dark Mode Toggle
+        $('#darkModeToggle').click(function () {
+            $('body').toggleClass('dark-mode');
+            if ($('body').hasClass('dark-mode')) {
+                $('#darkModeToggle').text('🌞'); // Change to sun symbol when dark mode is active
+            } else {
+                $('#darkModeToggle').text('🌙'); // Change back to moon symbol when light mode is active
+            }
         });
     });
 </script>

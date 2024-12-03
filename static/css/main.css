@@ -1,37 +1,92 @@
-body{
+body {
+    display: flex;
+    justify-content: center;  
+    align-items: flex-start;      
+    height: 100vh;           
     font-family: "Roboto Mono";
+    background-color: #89CFF0; /* Light Baby Blue */
+    margin: 0;              
+    transition: background-color 0.3s, color 0.3s;
 }
 
-table, td{
-    border: 1px solid #aaa;
+h1 {
+    text-align: center;  
+    position: relative;
 }
 
-table {
-    border-collapse: collapse;
-/*    width: 40px;
-    height: 40px;*/
-}
-td {
-    text-align: center;
-    padding: 1px;
-    width: 20px;
-    height: 20px;
-}
-
-/* Chrome, Safari, Edge, Opera */
-input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
+button {
+    border-radius: 15px;  
+    padding: 10px 20px;   
+    font-size: 16px;    
+    border: none;         
+    background-color: #FFB6C1; /* Light Pink */
+    color: black;          
+    cursor: pointer;   
+    transition: background-color 0.3s;
 }
 
-/* Firefox */
-input[type=number] {
-  -moz-appearance: textfield;
+button:hover {
+    background-color: #F08080; /* Light Coral */
 }
 
-input[type=number]{
-    border: none;
+button#darkModeToggle {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: transparent;
+    color: #000;
     font-size: 20px;
-    text-align: center;
+    cursor: pointer;
+    border: none;
+}
+
+/* Dark Mode Styles */
+body.dark-mode {
+    background-color: #2c2c2c; /* Dark Gray */
+    color: white;
+}
+
+body.dark-mode button {
+    background-color: #444444; /* Dark Gray */
+    color: white;
+}
+
+body.dark-mode button:hover {
+    background-color: #555555; /* Lighter Gray */
+}
+
+body.dark-mode input[type="number"] {
+    border: 2px solid #555555;
+    background-color: #444444;
+    color: white;
+}
+
+body.dark-mode .bottom-buttons button {
+    background-color: #555555;
+}
+
+body.dark-mode #darkModeToggle {
+    color: white;
+}
+h1 {
+    text-align: center;  
+    position: relative;
+}
+/* Rounded input fields for matrix elements */
+input[type="number"] {
+    border: 2px solid #89CFF0;  /* Light blue border for input fields */
+    border-radius: 25px;        /* Rounded corners */
+    padding: 8px;               /* Padding inside the input fields */
+    font-size: 20px;            /* Font size for better readability */
+    text-align: center;         /* Center the text in the input */
+    background-color: #ffffff;  /* White background for inputs */
+    color: #333;                /* Dark text color */
+}
+
+/* Input fields' style in dark mode */
+body.dark-mode input[type="number"] {
+    border: 2px solid #555555;  /* Darker border for input fields */
+    background-color: #444444;  /* Darker background for inputs */
+    color: white;               /* White text color in dark mode */
+    border-radius: 25px;        /* Rounded corners in dark mode too */
 }
