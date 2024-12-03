@@ -1,121 +1,146 @@
 {% extends 'base.html' %}
+{% block body %}
+<div>
+    <h1>Matrice</h1>
+    <form id="matrix-settings">
+        <label for="rowsA">Redovi A:</label>
+        <input type="number" id="rowsA" name="rowsA" min="1" max="10" value="2">
+        <label for="colsA">Stupci A:</label>
+        <input type="number" id="colsA" name="colsA" min="1" max="10" value="2">
+        <label for="rowsB">Redovi B:</label>
+        <input type="number" id="rowsB" name="rowsB" min="1" max="10" value="2">
+        <label for="colsB">Stupci B:</label>
+        <input type="number" id="colsB" name="colsB" min="1" max="10" value="2">
+        <button type="button" id="updateMatrices">Osvježi matrice</button>
+    </form>
 
-{% block head %}
-<style>
-    .matrix-container { display: flex; gap: 20px; }
-    .matrix { text-align: center; }
-    table { margin-bottom: 10px; }
-    input { width: 60px; text-align: center; }
-    button { margin: 5px; padding: 8px 12px; cursor: pointer; }
-    button:disabled { background-color: lightgray; cursor: not-allowed; }
-</style>
+    <h2>Matrica A</h2>
+    <div id="matrixAContainer"></div>
+    <button id="transposeA">Transponiraj A</button>
+    <p id="symmetryA">Simetrija: </p>
+
+    <h2>Matrica B</h2>
+    <div id="matrixBContainer"></div>
+    <button id="transposeB">Transponiraj B</button>
+    <p id="symmetryB">Simetrija: </p>
+
+    <h2>Rezultat</h2>
+    <div id="resultContainer"></div>
+
+    <div>
+        <button id="add">Zbroji</button>
+        <button id="subtract">Oduzmi</button>
+        <button id="multiply">Pomnožsi</button>
+    </div>
+</div>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    $(document).ready(function() {
-        // Prevent form submission with Enter key
-        $(document).on('keydown', 'input', function(e) {
-            if (e.key === "Enter") {
-                e.preventDefault();
+    function createMatrixInputs(containerId, rows, cols, matrixData = null) {
+        const container = $(`#${containerId}`);
+        container.empty();
+        for (let i = 0; i < rows; i++) {
+            let row = $('<div class="matrix-row"></div>');
+            for (let j = 0; j < cols; j++) {
+                const value = matrixData ? matrixData[i][j] : 0;
+                row.append(`<input type="number" class="matrix-input" data-row="${i}" data-col="${j}" value="${value}">`);
+            }
+            container.append(row);
+        }
+    }
+
+    function getMatrixData(containerId) {
+        const inputs = $(`#${containerId} .matrix-input`);
+        const matrix = [];
+        inputs.each(function () {
+            const row = parseInt($(this).data('row'));
+            const col = parseInt($(this).data('col'));
+            if (!matrix[row]) matrix[row] = [];
+            matrix[row][col] = parseFloat($(this).val());
+        });
+        return matrix;
+    }
+
+    function updateMatrix(containerId, rows, cols) {
+        $.post('/update_matrix', { rows, cols }, function (data) {
+            createMatrixInputs(containerId, rows, cols, data);
+            updateMatrixInfo(containerId);
+        });
+    }
+
+    function updateMatrixInfo(containerId) {
+        const matrix = getMatrixData(containerId);
+        $.ajax({
+            url: '/matrix_info',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ matrix }),
+            success: function (data) {
+                const symmetryId = containerId === 'matrixAContainer' ? '#symmetryA' : '#symmetryB';
+                $(symmetryId).text('Simetrija: ' + data.symmetry);
             }
         });
+    }
 
-        // Matrix operation buttons
-        $(".operation-btn").click(function() {
-            let operation = $(this).data('operation');
+    $(document).ready(function () {
+        $('#updateMatrices').click(function () {
+            const rowsA = $('#rowsA').val();
+            const colsA = $('#colsA').val();
+            const rowsB = $('#rowsB').val();
+            const colsB = $('#colsB').val();
+            updateMatrix('matrixAContainer', rowsA, colsA);
+            updateMatrix('matrixBContainer', rowsB, colsB);
+        });
+
+        $('#transposeA').click(function () {
+            const matrix = getMatrixData('matrixAContainer');
             $.ajax({
-                url: "/operation",
-                type: "POST",
-                contentType: "application/json",
-                data: JSON.stringify({ operation: operation }),
-                success: function(response) {
-                    if (response.result_matrix) {
-                        updateResultMatrix(response.result_matrix);
-                    } else {
-                        alert(response.error || 'Unknown error');
-                    }
+                url: '/transpose',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ matrix }),
+                success: function (data) {
+                    createMatrixInputs('matrixAContainer', data.length, data[0].length, data);
+                    updateMatrixInfo('matrixAContainer');
                 }
             });
         });
 
-        function updateResultMatrix(result) {
-            let resultTable = '<table border="1">';
-            result.forEach(row => {
-                resultTable += '<tr>';
-                row.forEach(cell => {
-                    resultTable += `<td>${cell}</td>`;
-                });
-                resultTable += '</tr>';
+        $('#transposeB').click(function () {
+            const matrix = getMatrixData('matrixBContainer');
+            $.ajax({
+                url: '/transpose',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ matrix }),
+                success: function (data) {
+                    createMatrixInputs('matrixBContainer', data.length, data[0].length, data);
+                    updateMatrixInfo('matrixBContainer');
+                }
             });
-            resultTable += '</table>';
-            $('#result-matrix').html(resultTable);
-        }
+        });
+
+        $('#add, #subtract, #multiply').click(function () {
+            const operation = $(this).attr('id');
+            const matrixA = getMatrixData('matrixAContainer');
+            const matrixB = getMatrixData('matrixBContainer');
+            $.ajax({
+                url: '/operate',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ operation, matrixA, matrixB }),
+                success: function (data) {
+                    createMatrixInputs('resultContainer', data.length, data[0].length, data);
+                },
+                error: function (xhr) {
+                    alert('Error: ' + xhr.responseJSON.error);
+                }
+            });
+        });
+
+        $('#matrixAContainer, #matrixBContainer').on('change', '.matrix-input', function () {
+            const containerId = $(this).closest('div').attr('id');
+            updateMatrixInfo(containerId);
+        });
     });
 </script>
-{% endblock %}
-
-{% block body %}
-<h1>Matrix Operations</h1>
-
-<div class="matrix-container">
-    <div class="matrix">
-        <h2>Matrix A</h2>
-        <form id="matrixA-form" action="/" method="POST">
-            <table border="1">
-                {% for row in range(rowa) %}
-                    <tr>
-                        {% for col in range(cola) %}
-                            <td><input size="3" type="number" name="a_{{ row }}_{{ col }}" value="{{ matrix_a[row][col] }}" /></td>
-                        {% endfor %}
-                    </tr>
-                {% endfor %}
-            </table>
-            <button type="submit" name="action" value="add_row_a">Add Row</button>
-            <button type="submit" name="action" value="remove_row_a">Remove Row</button>
-            <button type="submit" name="action" value="add_column_a">Add Column</button>
-            <button type="submit" name="action" value="remove_column_a">Remove Column</button>
-        </form>
-    </div>
-
-    <div class="matrix">
-        <h2>Matrix B</h2>
-        <form id="matrixB-form" action="/" method="POST">
-            <table border="1">
-                {% for row in range(rowb) %}
-                    <tr>
-                        {% for col in range(colb) %}
-                            <td><input size="3" type="number" name="b_{{ row }}_{{ col }}" value="{{ matrix_b[row][col] }}" /></td>
-                        {% endfor %}
-                    </tr>
-                {% endfor %}
-            </table>
-            <button type="submit" name="action" value="add_row_b">Add Row</button>
-            <button type="submit" name="action" value="remove_row_b">Remove Row</button>
-            <button type="submit" name="action" value="add_column_b">Add Column</button>
-            <button type="submit" name="action" value="remove_column_b">Remove Column</button>
-        </form>
-    </div>
-
-    <div class="matrix">
-        <h2>Result</h2>
-        <div id="result-matrix">
-            <table border="1">
-                {% for row in result_matrix %}
-                    <tr>
-                        {% for col in row %}
-                            <td>{{ col }}</td>
-                        {% endfor %}
-                    </tr>
-                {% endfor %}
-            </table>
-        </div>
-    </div>
-</div>
-
-<div>
-    <button class="operation-btn" data-operation="add">Add Matrices</button>
-    <button class="operation-btn" data-operation="subtract">Subtract Matrices</button>
-    <button class="operation-btn" data-operation="multiply">Multiply Matrices</button>
-    <button class="operation-btn" data-operation="transpose_a">Transpose Matrix A</button>
-    <button class="operation-btn" data-operation="transpose_b">Transpose Matrix B</button>
-</div>
 {% endblock %}

@@ -1,131 +1,69 @@
-from flask import Flask, render_template, request, session, jsonify
+from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'
 
-# Matrix operations
-def add_matrices(a, b):
-    return [[a[i][j] + b[i][j] for j in range(len(a[0]))] for i in range(len(a))]
-
-def subtract_matrices(a, b):
-    return [[a[i][j] - b[i][j] for j in range(len(a[0]))] for i in range(len(a))]
-
-def multiply_matrices(a, b):
-    result = [[0] * len(b[0]) for _ in range(len(a))]
-    for i in range(len(a)):
-        for j in range(len(b[0])):
-            result[i][j] = sum(a[i][k] * b[k][j] for k in range(len(b)))
-    return result
-
-def transpose_matrix(a):
-    return [[a[j][i] for j in range(len(a))] for i in range(len(a[0]))]
-
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/')
 def index():
-    if 'rowa' not in session:
-        session['rowa'] = 2
-    if 'cola' not in session:
-        session['cola'] = 2
-    if 'rowb' not in session:
-        session['rowb'] = 2
-    if 'colb' not in session:
-        session['colb'] = 2
-    if 'matrix_a' not in session:
-        session['matrix_a'] = [[0] * session['cola'] for _ in range(session['rowa'])]
-    if 'matrix_b' not in session:
-        session['matrix_b'] = [[0] * session['colb'] for _ in range(session['rowb'])]
-    if 'result_matrix' not in session:
-        session['result_matrix'] = []
+    return render_template('index.html')
 
-    if request.method == 'POST':
-        action = request.form.get('action')
+@app.route('/update_matrix', methods=['POST'])
+def update_matrix():
+    rows = int(request.form['rows'])
+    cols = int(request.form['cols'])
+    matrix = [[0 for _ in range(cols)] for _ in range(rows)]
+    return jsonify(matrix)
 
-        matrix_a = []
-        for row in range(session['rowa']):
-            row_data = []
-            for col in range(session['cola']):
-                cell_value = request.form.get(f'a_{row}_{col}', 0)
-                row_data.append(float(cell_value))
-            matrix_a.append(row_data)
-        session['matrix_a'] = matrix_a
+@app.route('/transpose', methods=['POST'])
+def transpose():
+    matrix = request.json['matrix']
+    transposed = [list(row) for row in zip(*matrix)]
+    return jsonify(transposed)
 
-        matrix_b = []
-        for row in range(session['rowb']):
-            row_data = []
-            for col in range(session['colb']):
-                cell_value = request.form.get(f'b_{row}_{col}', 0)
-                row_data.append(float(cell_value))
-            matrix_b.append(row_data)
-        session['matrix_b'] = matrix_b
+@app.route('/check_symmetry', methods=['POST'])
+def check_symmetry():
+    matrix = request.json['matrix']
+    transposed = [list(row) for row in zip(*matrix)]
 
-        if action == 'add_row_a':
-            if session['rowa'] < 5:
-                session['rowa'] += 1
-                session['matrix_a'].append([0] * session['cola'])
-        elif action == 'remove_row_a' and session['rowa'] > 1:
-            session['rowa'] -= 1
-            session['matrix_a'].pop()
-        elif action == 'add_column_a':
-            session['cola'] += 1
-            for row in session['matrix_a']:
-                row.append(0)
-        elif action == 'remove_column_a' and session['cola'] > 1:
-            session['cola'] -= 1
-            for row in session['matrix_a']:
-                row.pop()
+    is_symmetric = matrix == transposed
+    is_anti_symmetric = matrix == [[-cell for cell in row] for row in transposed]
 
-        elif action == 'add_row_b':
-            if session['rowb'] < 5:
-                session['rowb'] += 1
-                session['matrix_b'].append([0] * session['colb'])
-        elif action == 'remove_row_b' and session['rowb'] > 1:
-            session['rowb'] -= 1
-            session['matrix_b'].pop()
-        elif action == 'add_column_b':
-            session['colb'] += 1
-            for row in session['matrix_b']:
-                row.append(0)
-        elif action == 'remove_column_b' and session['colb'] > 1:
-            session['colb'] -= 1
-            for row in session['matrix_b']:
-                row.pop()
+    result = "Simetrična" if is_symmetric else "Anti-Simetrična" if is_anti_symmetric else "Nije Simetrična"
+    return jsonify({'symmetry': result})
 
-        session.modified = True
-        return redirect(url_for('index'))
+@app.route('/operate', methods=['POST'])
+def operate():
+    operation = request.json['operation']
+    matrix_a = request.json['matrixA']
+    matrix_b = request.json['matrixB']
+    result = []
 
-    return render_template(
-        'index.html',
-        rowa=session['rowa'], cola=session['cola'],
-        rowb=session['rowb'], colb=session['colb'],
-        matrix_a=session['matrix_a'],
-        matrix_b=session['matrix_b'],
-        result_matrix=session['result_matrix']
-    )
+    try:
+        if operation == 'add':
+            result = [[matrix_a[i][j] + matrix_b[i][j] for j in range(len(matrix_a[0]))] for i in range(len(matrix_a))]
+        elif operation == 'subtract':
+            result = [[matrix_a[i][j] - matrix_b[i][j] for j in range(len(matrix_a[0]))] for i in range(len(matrix_a))]
+        elif operation == 'multiply':
+            if len(matrix_a[0]) != len(matrix_b):
+                raise ValueError("Broj stupaca matrice A nije jednak broju redaka matrice B!")
+            result = [
+                [sum(matrix_a[i][k] * matrix_b[k][j] for k in range(len(matrix_b))) for j in range(len(matrix_b[0]))]
+                for i in range(len(matrix_a))
+            ]
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
 
-# AJAX route for matrix operations
-@app.route('/operation', methods=['POST'])
-def matrix_operation():
-    operation = request.json.get('operation')
-    matrix_a = session['matrix_a']
-    matrix_b = session['matrix_b']
+    return jsonify(result)
 
-    if operation == 'add':
-        result = add_matrices(matrix_a, matrix_b)
-    elif operation == 'subtract':
-        result = subtract_matrices(matrix_a, matrix_b)
-    elif operation == 'multiply':
-        if len(matrix_a[0]) == len(matrix_b):
-            result = multiply_matrices(matrix_a, matrix_b)
-        else:
-            return jsonify({'error': 'Matrix dimensions must match for multiplication.'})
-    elif operation == 'transpose_a':
-        result = transpose_matrix(matrix_a)
-    elif operation == 'transpose_b':
-        result = transpose_matrix(matrix_b)
-    else:
-        return jsonify({'error': 'Invalid operation.'})
+@app.route('/matrix_info', methods=['POST'])
+def matrix_info():
+    matrix = request.json['matrix']
+    transposed = [list(row) for row in zip(*matrix)]
 
-    return jsonify({'result_matrix': result})
+    is_symmetric = matrix == transposed
+    is_anti_symmetric = matrix == [[-cell for cell in row] for row in transposed]
 
-if __name__ == "__main__":
+    result = "Simetrična" if is_symmetric else "Anti-Simetrična" if is_anti_symmetric else "Nije Simetrična"
+    return jsonify({'symmetry': result, 'transposed': transposed})
+
+if __name__ == '__main__':
     app.run(debug=True)
